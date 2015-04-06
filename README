@@ -1,0 +1,59 @@
+README for autoatp v0.1
+
+A script to automate ATP reception and decoding with RTLSDR dongles and linux.
+---------------------------------
+quickstart: 
+make sure that you have the following tools installed: rtl_fm, atpdec (in the same folder as this script), timeout, at, sox, predict
+
+make certain that your /home/$username/.predict/predict.tle file has entries for NOAA-15 NOAA-18 NOAA-19 (I'll paste the tle's at the bottom of this file)
+
+run predict and make certain that you location is correct, exit predict (if your location isn't correct, you'll never receive anything!)
+
+edit the script so that outpath points to wherever you want your audio and image files to be stored, and save.
+
+execute the script:
+
+./autoatp NOAA-15
+./autoatp NOAA-18
+./autoatp NOAA-19
+
+wait for images to apear in the output directory!
+---------------------------------
+
+I created this tool because of frustration with the non-free windows app wxtoimg and all of the challenges involved in getting it to work with linux and RTLSDRs
+
+Thanks to my dear friend Jessica Litwin, for writing the bits that I couldn't and correcting me when I stuck my head in a dark and smelly place. This wouldn't exist at all without her.
+
+Thanks to John, KD2BD for creating predict, 
+
+
+--Shawn Somers, K7ATA, 
+
+---------------------------------
+Revision History:
+V0.1 -- Initial release, 3 NOAA APT satelites suported.
+
+
+
+---------------------------------
+Helpful links:
+
+predict: http://www.qsl.net/kd2bd/predict.html
+atpdec: http://atpdec.sourceforge.net/
+
+RTL-SDR wiki: http://sdr.osmocom.org/trac/wiki/rtl-sdr
+RTLSDR subreddit: http://www.reddit.com/r/RTLSDR/
+
+---------------------------------
+NOAA TLE lines:
+
+NOAA-15
+1 25338U 98030A   14362.55496428  .00000201  00000-0  10378-3 0  4709
+2 25338  98.7645 356.1647 0009654 306.9616 161.5198 14.25539222864531
+NOAA-18
+1 28654U 05018A   14362.54212207  .00000163  00000-0  11417-3 0  3821
+2 28654  99.1697 346.1621 0015235  80.3750  26.3502 14.12125879494993
+NOAA-19
+1 33591U 09005A   15057.50160947  .00000249  00000-0  16053-3 0  9998
+2 33591  98.9781   7.1924 0015006 120.4345  14.4873 14.11879924311872
+

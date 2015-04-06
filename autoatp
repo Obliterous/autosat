@@ -1,0 +1,112 @@
+#!/bin/bash
+ 
+#autoatp v0.2
+#Shawn Somers, K7ATA, shawn@busymarvin.net
+#Jessica Litwin, jkl@thegeekgroup.org
+#
+#
+# TO USE: autatp satellite
+# this will start an infinite loop of ATP download and decode for a given NOAA weather satelite
+#
+# viable options are: NOAA-15 NOAA-18 NOAA-19
+#
+#
+# external requirements are: rtl_fm, atpdec, timeout, at, sox, predict
+#
+#tried to keep the external requirements as minimal as possible
+
+# change this path to wherever ou want the audio and image files saved to. You MUST have rw perms for this path!
+outpath="/home/shawn/sat/"
+
+#full path to where atpdec is located. exclude the trailing slash!
+decpath="/home/shawn/sat"
+
+#PPM frequency error correction
+#rtlsdr gain
+ppm="-44"
+gain="25"
+
+# capture blank input
+if [ $# -gt 1 ]; then
+	echo "No satelite selected!!!"
+	echo "usage: ./autoatp NOAA-15 (or NOAA-18 or NOAA-19)" 
+	exit 0
+fi
+
+#use predict to generate teh next pass times for the chosen bird
+#generate all of the dates & times that we'll need
+
+get_bird_times()
+{ 
+set +o posix
+ 
+readarray -t arr <<< "$(/usr/bin/predict -p $1 | sed -n '1p;$p' | awk '{print $1}')";
+let plusten="${arr[1]} + 1200"; 
+start_date="$(date -d @${arr[0]} +'%H:%M %m/%d/%y' )";
+end_date="$(date -d @${arr[1]} +'%H%M %m/%d/%y' )";
+proc_date="$(date -d @${plusten} +'%H:%M %m/%d/%y' )";
+file_date="$(date -d @${arr[0]} +'%H_%M_%m_%d_%y' )";
+let "elapsed_time = ${arr[1]} - ${arr[0]}";
+ 
+#echo "start: ${arr[0]}: $start_date";
+#echo "  end: ${arr[1]}: $end_date";
+#echo "  proc: ${arr[1]}: $proc_date";
+#echo "     time elapsed: $(date -u -d @${elapsed_time} +\"%T\")";
+}
+
+get_bird_times $1
+
+
+#set the radio frequencies that rtl_fm will need, based on bird
+case $1 in
+NOAA-15)
+bird_freq="137.6200M";
+;;
+NOAA-18)
+bird_freq="137.9125M";
+;;
+NOAA-19)
+bird_freq="137.1000M";
+;;
+esac;
+
+#because at wont let us use seconds, lets add a minute, so that we're sure we dont cut off the end of a pass
+elapsed_time2=$((elapsed_time+60))
+
+#lest set our output filename for tha audio
+outfile="$outpath$file_date.wav"
+
+#test variables for validation
+#echo $1
+#echo $start_date $elapsed_time $elapsed_time2 $bird_freq $outfile
+
+#building our commands
+#this long mess is how we record the satelite at the propper time and duration
+#record_command="echo \"timeout $elapsed_time2 /usr/bin/rtl_fm -g $gain -p $ppm -f $bird_freq -s 11025 - | sox -t raw -e signed -c1 -b16 -r 11025 - $outfile\" | at $start_date"
+record_command="echo \"timeout $elapsed_time2 /usr/bin/rtl_fm -g $gain -p $ppm -r 32k -f $bird_freq -s 34816 - | sox -t raw -e signed -c1 -b16 -r 11025 - $outfile\" | at $start_date"
+
+echo $record_command
+
+#this command is where we make pretty pictures (assuming that we recorded a good signal!)
+proc_command1="echo \"$decpath/atpdec -i r -d $outpath $outfile \" | at $proc_date"
+proc_command2="echo \"$decpath/atpdec -i a -d $outpath $outfile \" | at $proc_date"
+proc_command3="echo \"$decpath/atpdec -i b -d $outpath $outfile \" | at $proc_date"
+proc_command4="echo \"$decpath/atpdec -i c -d $outpath $outfile \" | at $proc_date"
+proc_command5="echo \"$decpath/atpdec -i t -d $outpath $outfile \" | at $proc_date"
+
+
+#and finally, this one will start the whole process over again after teh current pass is complete!
+reset_command="echo \"$dec_path/autoatp $1 \"| at $proc_date"
+
+
+#here is where we ACTUALLY do all the work. 
+(eval "$record_command")
+(eval "$proc_command1")
+(eval "$proc_command2")
+(eval "$proc_command3")
+(eval "$proc_command4")
+(eval "$proc_command5")
+#(eval "$reset_command")
+
+exit
+
